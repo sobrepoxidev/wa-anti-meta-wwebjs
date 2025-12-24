@@ -1,0 +1,28 @@
+{
+  "name": "wa-greenplanet-ai",
+  "version": "4.2.0",
+  "description": "WhatsApp Bot Worker con Anti-Detección v4.2 y Smart Queue",
+  "type": "module",
+  "main": "worker.js",
+  "scripts": {
+    "start": "node worker.js",
+    "dev": "node --watch worker.js",
+    "worker:1": "PORT=3001 WORKER_ID=worker-1 node worker.js",
+    "worker:2": "PORT=3002 WORKER_ID=worker-2 node worker.js",
+    "worker:3": "PORT=3003 WORKER_ID=worker-3 node worker.js",
+    "worker:4": "PORT=3004 WORKER_ID=worker-4 node worker.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "qrcode-terminal": "^0.12.0",
+    "whatsapp-web.js": "^1.23.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "author": "Green Planet AI",
+  "license": "UNLICENSED",
+  "private": true
+}
