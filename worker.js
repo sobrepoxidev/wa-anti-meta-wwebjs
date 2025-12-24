@@ -21,7 +21,7 @@ import {
 import {
   randomBetween,
   safeSleep,
-  getCostaRicaHour,
+  getCurrentHour,
   isSleepTime,
   isNightTime,
   getTimeOfDayFactor,
@@ -95,14 +95,14 @@ whatsappClient.on('qr', (qr) => {
 
 whatsappClient.on('ready', async () => {
   connectedNumber = whatsappClient.info?.wid?._serialized || 'unknown';
-  const crHour = getCostaRicaHour();
-  
+  const currentHour = getCurrentHour();
+
   console.log(`\n✅ [${WORKER_ID}] WhatsApp conectado`);
   console.log(`📲 Cuenta: ${connectedNumber}`);
   console.log(`🔌 Puerto: ${PORT}`);
   console.log(`🛡️  Anti-detección v4.2: ACTIVO`);
   console.log(`🧠 Smart Queue: ${HUMAN_BEHAVIOR_CONFIG.smartQueue.enabled ? 'ON' : 'OFF'}`);
-  console.log(`🕐 Hora CR: ${crHour}:00 | Modo: ${isSleepTime() ? '😴 SLEEP' : isNightTime() ? '🌙 NIGHT' : '☀️ DAY'}`);
+  console.log(`🕐 Time: ${currentHour}:00 | Mode: ${isSleepTime() ? '😴 SLEEP' : isNightTime() ? '🌙 NIGHT' : '☀️ DAY'}`);
   console.log(`📁 Media: ${PUBLIC_MEDIA_URL}${BASE_PATH}/media/`);
 
   whatsappReady = true;
@@ -231,8 +231,8 @@ async function processMessageWithHumanBehavior(message, identifier, realPhone, d
 
   try {
     const chat = await message.getChat();
-    
-    // Delay de "sueño" si es horario nocturno CR
+
+    // Apply sleep delay if in sleep hours
     await applySleepDelay();
     
     await safeSleep(randomBetween(150, 350), 500);
@@ -420,7 +420,7 @@ app.use(`${BASE_PATH}/media`, express.static(MEDIA_DIR, {
 
 // Health check
 app.get(`${BASE_PATH}/health`, async (req, res) => {
-  const crHour = getCostaRicaHour();
+  const currentHour = getCurrentHour();
   res.json({
     status: 'ok',
     worker_id: WORKER_ID,
@@ -431,7 +431,7 @@ app.get(`${BASE_PATH}/health`, async (req, res) => {
     smart_queue: smartQueue.getStats(),
     media_url: `${PUBLIC_MEDIA_URL}${BASE_PATH}/media/`,
     schedule: {
-      cr_hour: crHour,
+      current_hour: currentHour,
       mode: isSleepTime() ? 'sleep' : isNightTime() ? 'night' : 'day',
       slowdown_factor: getTimeOfDayFactor(),
     },
@@ -568,12 +568,12 @@ process.on('unhandledRejection', (reason) => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 app.listen(PORT, () => {
-  const crHour = getCostaRicaHour();
+  const currentHour = getCurrentHour();
   const config = HUMAN_BEHAVIOR_CONFIG;
-  
+
   console.log(`\n🌳 [${WORKER_ID}] ${BOT_NAME} Worker v4.2`);
   console.log(`🔌 Puerto: ${PORT}`);
-  console.log(`🕐 Hora CR: ${crHour}:00`);
+  console.log(`🕐 Time: ${currentHour}:00`);
   console.log(`📁 Media: ${PUBLIC_MEDIA_URL}${BASE_PATH}/media/`);
   console.log(`🛡️  Anti-detección v4.2: READY`);
   console.log(`   ├─ Smart Queue: ON`);
@@ -585,6 +585,6 @@ app.listen(PORT, () => {
   console.log(`   ├─ Typing intermitente: ON`);
   console.log(`   ├─ Mensajes divididos: ON`);
   console.log(`   ├─ Audio Base64 + ffmpeg: ON`);
-  console.log(`   ├─ Sleep mode (1-5 AM CR): ${config.schedule.sleepSlowdownFactor}x`);
+  console.log(`   ├─ Sleep mode (${config.schedule.sleepHoursStart}-${config.schedule.sleepHoursEnd}): ${config.schedule.sleepSlowdownFactor}x`);
   console.log(`   └─ Night mode: ${config.schedule.nightSlowdownFactor}x\n`);
 });

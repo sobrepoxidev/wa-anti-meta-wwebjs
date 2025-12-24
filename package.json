@@ -1,7 +1,7 @@
 {
-  "name": "wa-greenplanet-ai",
+  "name": "wa-antropy-engine",
   "version": "4.2.0",
-  "description": "WhatsApp Bot Worker con Anti-Detección v4.2 y Smart Queue",
+  "description": "Human Behavior Simulation Framework for WhatsApp Automation - Anti-Detection v4.2 with Smart Queue",
   "type": "module",
   "main": "worker.js",
   "scripts": {
@@ -12,6 +12,18 @@
     "worker:3": "PORT=3003 WORKER_ID=worker-3 node worker.js",
     "worker:4": "PORT=3004 WORKER_ID=worker-4 node worker.js"
   },
+  "keywords": [
+    "whatsapp",
+    "automation",
+    "anti-detection",
+    "human-behavior",
+    "bot",
+    "smart-queue",
+    "whatsapp-web.js",
+    "webhook",
+    "n8n",
+    "orchestration"
+  ],
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
     "dotenv": "^16.3.1",
@@ -22,7 +34,7 @@
   "engines": {
     "node": ">=18.0.0"
   },
-  "author": "Green Planet AI",
+  "author": "",
   "license": "UNLICENSED",
   "private": true
 }

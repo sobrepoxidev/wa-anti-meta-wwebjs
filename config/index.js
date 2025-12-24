@@ -6,8 +6,8 @@ import 'dotenv/config';
 
 export const PORT = parseInt(process.env.PORT || '3001');
 export const WORKER_ID = process.env.WORKER_ID || `worker-${PORT}`;
-export const BASE_PATH = process.env.BASE_PATH || '/api/wa-greenplanet-ai';
-export const BOT_NAME = process.env.BOT_NAME || 'GreenPlanetBot';
+export const BASE_PATH = process.env.BASE_PATH || '/api/wa-antropy';
+export const BOT_NAME = process.env.BOT_NAME || 'MyBot';
 export const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL;
 export const N8N_TIMEOUT = parseInt(process.env.N8N_TIMEOUT || '120000');
 
@@ -15,8 +15,8 @@ export const N8N_TIMEOUT = parseInt(process.env.N8N_TIMEOUT || '120000');
 export const PUBLIC_MEDIA_URL = process.env.PUBLIC_MEDIA_URL || `http://localhost:${PORT}`;
 export const MEDIA_DIR = process.env.MEDIA_DIR || './media';
 
-// Timezone de Costa Rica (GMT-6)
-export const TIMEZONE = process.env.TIMEZONE || 'America/Costa_Rica';
+// Timezone (default: America/New_York - GMT-5/GMT-4)
+export const TIMEZONE = process.env.TIMEZONE || 'America/New_York';
 
 // Supabase
 export const SUPABASE_URL = process.env.SUPABASE_URL;
