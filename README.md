@@ -1,261 +1,198 @@
-# 🌳 WA Green Planet AI - Worker v4.2
+# 🧠 WA Antropy Engine
+### Framework de Simulación de Comportamiento Humano para Automatización
 
-Sistema de bot WhatsApp multi-worker con anti-detección avanzada y Smart Queue inteligente.
+> **Nota:** Este sistema actúa como una capa de "middleware cognitivo" entre el protocolo de WhatsApp y tu lógica de negocio (n8n, backend, AI), inyectando imperfecciones humanas, latencia contextual y patrones de comportamiento no deterministas para evitar la detección de automatización.
 
-## 📁 Estructura del Proyecto
+---
 
-```
-wa-greenplanet-ai/
-├── config/
-│   └── index.js          # Configuración y variables de entorno
-├── lib/
-│   ├── index.js          # Barrel export
-│   ├── utils.js          # Utilidades generales y timing
-│   ├── media.js          # Gestión de multimedia + ffmpeg
-│   ├── queue.js          # Smart Queue con detección de actividad
-│   ├── supabase.js       # Orquestador multi-worker
-│   ├── typing.js         # Simulador de typing/recording
-│   ├── reactions.js      # Sistema de reacciones
-│   ├── n8n.js            # Comunicación con n8n
-│   └── behavior.js       # Variador de comportamiento
-├── worker.js             # Archivo principal
-├── package.json
-├── .env.example
-└── README.md
-```
+## 📖 Introducción
 
-## 🚀 Instalación
+**WA Antropy Engine** es un orquestador de workers diseñado para dotar de "humanidad" (antropía) a los bots de WhatsApp. A diferencia de los bots tradicionales que responden instantáneamente y con patrones fijos, este motor simula el comportamiento psicomotor de un humano real operando un dispositivo móvil.
 
-```bash
-# Clonar/copiar el proyecto
-cd wa-greenplanet-ai
+El sistema no solo envía mensajes, sino que "lee", "piensa", "escribe", "graba notas de voz" y "duerme" respetando ritmos circadianos y contextos de conversación, haciendo prácticamente indistinguible la actividad del bot de la de un operador humano.
 
-# Instalar dependencias
-npm install
+---
 
-# Instalar ffmpeg (requerido para audio)
-sudo apt update && sudo apt install -y ffmpeg
+## 🏗️ Arquitectura Técnica
 
-# Copiar y configurar variables de entorno
-cp .env.example .env
-nano .env
-```
+El sistema utiliza una arquitectura distribuida donde el "Worker" maneja la sesión de WhatsApp y la simulación de comportamiento, mientras delegada la lógica de negocio a un cerebro externo (n8n, API propia, etc.) y el estado a una base de datos en tiempo real.
 
-## ⚙️ Configuración
-
-Edita el archivo `.env` con tus credenciales:
-
-```env
-PORT=3001
-WORKER_ID=worker-1
-SUPABASE_URL=https://xxx.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=xxx
-N8N_WEBHOOK_URL=https://xxx/webhook/whatsapp
-PUBLIC_MEDIA_URL=https://tu-dominio.com
-```
-
-## 🏃 Ejecución
-
-### Un solo worker:
-```bash
-npm start
-# o
-node worker.js
-```
-
-### Múltiples workers con PM2:
-```bash
-# Iniciar 4 workers
-pm2 start worker.js --name wa-worker-1 -- 
-pm2 start worker.js --name wa-worker-2 --env PORT=3002 --env WORKER_ID=worker-2
-pm2 start worker.js --name wa-worker-3 --env PORT=3003 --env WORKER_ID=worker-3
-pm2 start worker.js --name wa-worker-4 --env PORT=3004 --env WORKER_ID=worker-4
-
-# O usar ecosystem.config.js (ver abajo)
-pm2 start ecosystem.config.js
-```
-
-## 🧠 Smart Queue v2 - Batching Inteligente
-
-### ¿Cómo funciona?
-
-La Smart Queue detecta cuando el usuario está **escribiendo o grabando audio** y ajusta dinámicamente el batching:
-
-```
-Usuario envía "Hola" (t=0)
-    → Timer: 4s
+```mermaid
+graph TD
+    User((Usuario Real)) <-->|WhatsApp Protocol| W[Worker: Antropy Engine]
     
-Usuario empieza a escribir (t=2s)
-    → Timer PAUSADO ⏸️
+    subgraph "Antropy Engine Core"
+        W -->|Detecta Actividad| SQ[Smart Queue]
+        SQ -->|Batching & Debounce| BM[Behavior Modulator]
+        BM -->|Simulación Typing/Audio| W
+    end
     
-Usuario sigue escribiendo (t=5s)
-    → Timer sigue pausado
-    
-Usuario deja de escribir (t=7s)
-    → Timer REINICIA: 4s desde ahora
-    
-Usuario envía "tengo una pregunta" (t=8s)
-    → Se añade al batch
-    → Timer REINICIA: 4s
-    
-Silencio total por 4s (t=12s)
-    → FLUSH! → Procesar ["Hola", "tengo una pregunta"]
+    W <-->|Sync Estado & Locks| DB[(Supabase / Redis)]
+    W -->|Webhook: Mensajes + Contexto| Brain[Lógica de Negocio (n8n/API)]
+    Brain -->|Respuesta JSON| W
 ```
 
-### Configuración
+### Flujo de Procesamiento
 
-En `config/index.js`:
+1.  **Recepción y Espera Activa (Smart Queue v2):**
+    *   El sistema recibe un mensaje pero no lo procesa inmediatamente.
+    *   **Escucha Activa:** Si el usuario está escribiendo (`typing`) o grabando audio (`recording`), el worker **pausa** su procesamiento para no interrumpir, simulando atención humana.
+    *   **Batching:** Agrupa múltiples mensajes cortos en un solo contexto lógico.
 
-```javascript
-smartQueue: {
-  enabled: true,
-  baseWindowMs: 4000,        // Ventana base después de inactividad
-  mediaWindowMs: 5000,       // Ventana extra para multimedia
-  maxWaitTimeMs: 30000,      // Máximo tiempo de espera total
-  maxBatchSize: 8,           // Máximo mensajes por batch
-  inactivityThresholdMs: 3000,
-  contextSwitchDelayMs: [1500, 3500],
-}
-```
+2.  **Simulación Cognitiva (Behavior Modulator):**
+    *   Calcula tiempos de lectura basados en la longitud del texto y tipo de media.
+    *   Determina tiempos de escritura/grabación usando distribuciones gaussianas (no tiempos fijos).
+    *   Aplica "Jitter" (variación aleatoria) para evitar patrones matemáticos exactos.
 
-### Límites de seguridad
+3.  **Ejecución de Respuesta:**
+    *   Simula estados de presencia (`composing`, `recording`).
+    *   Envía la respuesta final.
 
-| Límite | Valor | Propósito |
-|--------|-------|-----------|
-| `maxWaitTimeMs` | 30s | Evitar esperas infinitas |
-| `maxBatchSize` | 8 | Evitar batches gigantes |
+---
 
-## 🛡️ Características Anti-Detección
+## 🚀 Instalación y Despliegue
 
-- ✅ **Smart Queue** con detección de actividad del usuario
-- ✅ **Timing Gaussiano** para delays más naturales
-- ✅ **Sleep Mode** (1-5 AM CR) con slowdown 2.5x
-- ✅ **Night Mode** (10 PM - 7 AM CR) con slowdown 1.4x
-- ✅ **Typing Intermitente** - Pausas y "pensando"
-- ✅ **Reacciones** aleatorias (8% probabilidad)
-- ✅ **Multi-worker** con cross-worker 8%
-- ✅ **Mensajes divididos** con delays entre partes
-- ✅ **Audio Base64** con conversión a OGG Opus
+### Requisitos Previos
 
-## 📡 Payload a n8n
+*   **Node.js**: v18.0.0 o superior.
+*   **FFmpeg**: Requerido para la codificación y manipulación de audio (OGG Opus).
+*   **Supabase Project**: Para la orquestación multi-worker (opcional si usa 1 solo worker, pero recomendado).
 
-Cada mensaje (o batch) se envía a n8n con esta estructura:
+### Pasos de Instalación
+
+1.  **Clonar el repositorio:**
+    ```bash
+    git clone <repo-url>
+    cd wa-antropy-engine
+    ```
+
+2.  **Instalar dependencias:**
+    ```bash
+    npm install
+    ```
+
+3.  **Configurar FFmpeg (Linux/Debian):**
+    ```bash
+    sudo apt update && sudo apt install -y ffmpeg
+    ```
+
+4.  **Configuración de Entorno:**
+    Copie el archivo de ejemplo y edítelo:
+    ```bash
+    cp .env.example .env
+    ```
+
+### Variables de Entorno (.env)
+
+| Variable | Descripción | Ejemplo |
+|----------|-------------|---------|
+| `PORT` | Puerto para la API interna del worker | `3001` |
+| `WORKER_ID` | Identificador único del nodo | `worker-alpha` |
+| `N8N_WEBHOOK_URL` | Endpoint del "cerebro" lógico | `https://n8n.mi-server.com/webhook/...` |
+| `SUPABASE_URL` | URL del proyecto Supabase (Orquestación) | `https://xyz.supabase.co` |
+| `SUPABASE_SERVICE_ROLE_KEY` | Key para gestión de estado | `eyJ...` |
+| `TIMEZONE` | Zona horaria para ritmos circadianos | `America/Mexico_City` |
+
+---
+
+## 🧠 Características de Antropía (Simulación Humana)
+
+El corazón del sistema es su capacidad de introducir "ruido humano" controlado.
+
+### 1. Smart Queue & Escucha Activa
+El sistema monitorea eventos de `chat_state_changed`.
+*   **Escenario:** El usuario envía "Hola", pero inmediatamente aparece "escribiendo...".
+*   **Reacción:** El bot detecta el estado `typing`, pausa su temporizador de respuesta y espera a que el usuario termine su idea completa antes de procesar el bloque de mensajes.
+
+### 2. Modulación de Comportamiento (Behavior Variator)
+Para evitar huellas digitales estadísticas, el bot cambia su "personalidad" técnica ligeramente cada `N` mensajes (configurado en `varyBehaviorEveryNMessages`).
+*   Varía la velocidad de escritura (WPM).
+*   Altera la probabilidad de cometer errores tipográficos.
+*   Modifica los tiempos de "lectura" de imágenes/video.
+
+### 3. Ritmos Circadianos (Modos de Sueño)
+Simula horarios de vida real para reducir la actividad en horas no laborales.
+*   **Sleep Mode (Madrugada):** Aumenta drásticamente los tiempos de respuesta (factor 2.5x) o ignora mensajes hasta la mañana.
+*   **Night Mode (Noche):** Ralentiza las respuestas (factor 1.4x) simulando cansancio o distracción.
+
+### 4. Simulación de Medios
+*   **Audio:** Convierte audio base64 a formato nativo de WhatsApp (OGG Opus) simulando una grabación de micrófono real.
+*   **Visualización:** Antes de responder a una imagen, espera un tiempo proporcional al "procesamiento visual" humano.
+
+---
+
+## 🔌 API Reference & Payload
+
+El worker se comunica con su lógica de negocio (ej. n8n) mediante Webhooks.
+
+### Request (Worker -> n8n)
+
+Cuando el worker decide procesar un mensaje (o grupo de mensajes), envía este payload:
 
 ```json
 {
-  "phone": "+50688889999",
-  "type": "audio",
-  "message": "texto del usuario\notro mensaje",
-  "has_media": true,
-  "media_count": 2,
-  "media_list": [
-    {
-      "type": "image",
-      "url": "https://tu-dominio.com/api/wa-greenplanet-ai/media/abc123.jpg",
-      "mimetype": "image/jpeg",
-      "filename": "abc123.jpg",
-      "size": 45678
-    },
-    {
-      "type": "audio",
-      "url": "https://tu-dominio.com/api/wa-greenplanet-ai/media/def456.ogg",
-      "mimetype": "audio/ogg",
-      "filename": "def456.ogg",
-      "size": 12345
-    }
-  ],
-  "message_id": "...",
-  "timestamp": "2024-01-15T10:30:00.000Z",
-  "bot_name": "GreenPlanetBot",
-  "worker_id": "worker-1",
-  "cr_hour": 10,
-  "is_sleep_time": false
+  "phone": "5215555555555",
+  "type": "text",
+  "message": "Hola, necesito información sobre el servicio",
+  "has_media": false,
+  "batch_size": 1,
+  "simulation_stats": {
+    "read_time_ms": 1200,
+    "typing_time_ms": 3400
+  },
+  "worker_id": "worker-alpha",
+  "timestamp": "2024-03-20T10:00:00Z"
 }
 ```
 
-## 📤 Respuesta de n8n
+### Response (n8n -> Worker)
 
-### Texto simple:
+Su lógica de negocio debe responder con un JSON instruyendo qué hacer.
+
+**Responder con Texto:**
 ```json
 {
-  "output": "Respuesta del bot"
+  "output": "Claro, aquí tienes la información solicitada."
 }
 ```
 
-### Múltiples mensajes:
-```json
-{
-  "output": ["Mensaje 1", "Mensaje 2", "Mensaje 3"]
-}
-```
-
-### Audio en Base64:
+**Responder con Audio (Simulado):**
 ```json
 {
   "type": "audio",
-  "audio_base64": "...",
-  "audio_mimetype": "audio/mpeg",
-  "output": "Texto alternativo"
+  "audio_base64": "UklGRi...",
+  "output": "Texto de fallback para logs"
 }
 ```
 
-## 🔌 API Endpoints
-
-| Endpoint | Método | Descripción |
-|----------|--------|-------------|
-| `/api/wa-greenplanet-ai/health` | GET | Estado del worker |
-| `/api/wa-greenplanet-ai/orchestration/stats` | GET | Stats de orquestación |
-| `/api/wa-greenplanet-ai/send-message` | POST | Enviar mensaje de texto |
-| `/api/wa-greenplanet-ai/send-audio` | POST | Enviar audio |
-| `/api/wa-greenplanet-ai/media/*` | GET | Servir archivos multimedia |
-
-## 📊 Logs de ejemplo
-
-```
-📩 [worker-1] +50688889999 [AUDIO]: "(sin texto)" 🌙
-   ✓  Claim OK
-📥 [worker-1] Buffer +50688889999: 1 msgs [AUDIO]
-   ⏸️  [worker-1] Usuario activo - esperando...
-   ⌨️  [worker-1] Usuario 889999: typing
-   💤 [worker-1] Usuario 889999: available
-   ▶️  [worker-1] Usuario inactivo - flush en 5000ms
-
-📩 [worker-1] +50688889999: "y además quería..." 🌙
-   ✓  Claim OK
-📥 [worker-1] Buffer +50688889999: 2 msgs
-   📦 [worker-1] Batch: 2 msgs [audio] (esperó 8234ms)
-
-🤖 [worker-1] Procesando +50688889999 [AUDIO]
-   📊 Chars: 42 | Batch: 2 | Medias: 1
-   👁️  Visto
-   📖 Leyendo: 3456ms
-   🎙️  Grabando
-   🤖 n8n: 2345ms
-   🎵 Enviando audio: resp_abc123.ogg
-   ✅ Audio enviado | 8765ms
+**Responder Múltiples Mensajes:**
+```json
+{
+  "output": ["Primer mensaje", "Segundo mensaje con detalle"]
+}
 ```
 
-## 🔧 Troubleshooting
+---
 
-### Audio no funciona en móvil
-Verifica que ffmpeg esté instalado:
-```bash
-ffmpeg -version
-```
+## 🛠️ Endpoints de Control
 
-### Mensajes no se agrupan
-Revisa los logs para ver si la detección de actividad está funcionando:
-```
-⌨️  [worker-1] Usuario 889999: typing
-```
+El worker expone una API REST local para monitoreo y control manual.
 
-### Error de Supabase
-Verifica las credenciales y que las funciones RPC existan:
-- `worker_heartbeat`
-- `try_claim_message`
-- `mark_message_processed`
-- `cleanup_old_data`
+*   `GET /api/wa-greenplanet-ai/health`: Estado de salud del worker y conexión a WA.
+*   `GET /api/wa-greenplanet-ai/orchestration/stats`: Estadísticas de la cola inteligente y variaciones.
+*   `POST /api/wa-greenplanet-ai/send-message`: Forzar envío de mensaje (bypassing queue).
 
-## 📝 Licencia
+---
 
-Privado - Green Planet AI
+## 🤝 Contribución y Mantenimiento
+
+### Reporte de Bugs
+Por favor, utilice el sistema de Issues describiendo el comportamiento esperado vs el observado. Incluya logs de la sección `[Behavior]` para diagnosticar problemas de timing.
+
+### Roadmap
+- [ ] Implementación de "Humor States" (variar longitud de respuesta según "ánimo").
+- [ ] Soporte para stickers dinámicos basados en sentimiento.
+- [ ] Integración nativa con LLMs locales para pre-procesamiento de intenciones.
+
+### Licencia
+Este software es propiedad privada. Su uso está restringido a los términos de licencia acordados.
